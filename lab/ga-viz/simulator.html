@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Genetic color generation</title>
+	<link href="css/bootstrap.css" rel="stylesheet">
+	<link href="css/bootstrap-responsive.css" rel="stylesheet">
+	<script src="js/jquery-1.8.1.js"></script>
+	<script src="js/d3.v2.js"></script>
+	<script src="js/simulator.js"></script>
+	<style type="text/css">
+	    #chart {
+	    	background-color: #222;
+	    	border-radius: 4px;
+	    }
+
+	    #sidebar, #content {
+	    	margin-top: 40px;
+	    }
+
+	    #chart-header {
+	    	padding: 10px;
+	    }
+
+	    #info {
+	    	color: #CCC;
+	    	font-size: 18px;
+	    }
+	</style>
+</head>
+<body>
+    <div class="container">
+    	<div class="row">
+    		<div class="span3">
+    			<div id="sidebar">
+					<form id="control-form">
+						<label>Target color</label>
+						<input id="color-picker" type="color" value="#eeeeee" />
+						<label>Population size</label>
+						<input id="size-stepper" type="number" min="5" max="1000" value="50" />
+						<label>Mutation rate</label>
+						<input id="factor-stepper" type="number" min="0.01" max="0.99" value="0.5" step="0.01" />
+						<span class="help-block">Percentage of population that will affected.</span>
+						<button id="start-button" type="submit" class="btn btn-primary">Start simulation</button>
+					</form>
+    			</div>
+    		</div>
+    		<div class="span9">
+    			<div id="content">
+					<div id="chart">
+						<div id="chart-header">
+							<span id="info"></span>
+						</div>
+					</div>
+    			</div>
+    		</div>
+    	</div>
+    </div>
+	<script type="text/javascript">
+		$(function() {
+			var simulator = new Simulator(870, 500);
+
+			$("#control-form").submit(function(event) {
+				var size = parseInt($("#size-stepper").val());
+				var factor = parseFloat($("#factor-stepper").val());
+				var color = $("#color-picker").val().split('#')[1];
+
+				simulator.run(color, function(population) {
+					$("#info").text("Generation #" + population.getGenerationCount());
+				}, size, factor);
+
+				event.preventDefault();
+			});
+		});
+	</script>
+</body>
+</html>
