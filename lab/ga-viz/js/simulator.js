@@ -186,7 +186,7 @@
     };
 
     Simulator.prototype.displayPopulation = function(population) {
-      var circles, data, member;
+      var circles, data, member, titles;
       data = (function() {
         var _i, _len, _ref, _results;
         _ref = population.getMembers();
@@ -215,6 +215,13 @@
       }).attr("transform", function(d) {
         return "translate(" + d.x + "," + d.y + ")";
       });
+      titles = this.vis.selectAll("title").data(this.layout.nodes({
+        children: data
+      }).filter(function(d) {
+        return !d.children;
+      })).text(function(d) {
+        return "#" + (d.color.toUpperCase());
+      });
       circles.enter().append("circle").style("fill", function(d) {
         return "#" + d.color;
       }).attr("r", function(d) {
@@ -223,7 +230,9 @@
         return d.alpha;
       }).attr("transform", function(d) {
         return "translate(" + d.x + "," + d.y + ")";
-      }).transition().duration(150).attr("opacity", 0.3);
+      }).append("title").text(function(d) {
+        return "#" + (d.color.toUpperCase());
+      });
       return circles.exit().remove();
     };
 
