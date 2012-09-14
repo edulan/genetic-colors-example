@@ -78,11 +78,12 @@
 
   Population = (function() {
 
-    function Population(targetCode, size, factor) {
+    function Population(targetCode, size, factor, mates) {
       var chromosome, i, _i, _ref;
       this.targetCode = targetCode;
       this.size = size;
       this.factor = factor;
+      this.mates = mates;
       this.members = [];
       this.generationCount = 0;
       for (i = _i = 0, _ref = this.size; 0 <= _ref ? _i < _ref : _i > _ref; i = 0 <= _ref ? ++_i : --_i) {
@@ -111,20 +112,24 @@
     };
 
     Population.prototype.getNextGeneration = function() {
-      var member, subgeneration, subgeneration1, subgeneration2, _i, _j, _len, _len1, _ref, _ref1;
+      var args, children, i, mates, member, _i, _j, _k, _len, _len1, _ref, _ref1, _ref2;
       _ref = this.members;
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         member = _ref[_i];
         member.calculateCost(this.targetCode);
       }
       this.sort();
-      subgeneration1 = this.members[0].mate(this.members[1]);
-      subgeneration2 = this.members[2].mate(this.members[3]);
-      subgeneration = subgeneration1.concat(subgeneration2);
-      this.members.splice(this.members.length - subgeneration.length, subgeneration.length, subgeneration[0], subgeneration[1], subgeneration[2], subgeneration[3]);
-      _ref1 = this.members;
-      for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-        member = _ref1[_j];
+      args = [this.members.length - this.mates, this.mates];
+      mates = this.mates / 2;
+      for (i = _j = 0, _ref1 = mates - 1; 0 <= _ref1 ? _j <= _ref1 : _j >= _ref1; i = 0 <= _ref1 ? ++_j : --_j) {
+        children = this.members[i].mate(this.members[i + mates]);
+        args.push(children[0]);
+        args.push(children[1]);
+      }
+      this.members.splice.apply(this.members, args);
+      _ref2 = this.members;
+      for (_k = 0, _len1 = _ref2.length; _k < _len1; _k++) {
+        member = _ref2[_k];
         if (Math.random() > this.factor) {
           continue;
         }
@@ -149,7 +154,7 @@
       this.vis = d3.select("#chart").append("svg").attr("width", width).attr("height", height);
     }
 
-    Simulator.prototype.run = function(targetCode, callback, populationSize, mutationFactor) {
+    Simulator.prototype.run = function(targetCode, callback, populationSize, mutationFactor, mateFactor) {
       var population, tick, timeout,
         _this = this;
       if (populationSize == null) {
@@ -158,13 +163,15 @@
       if (mutationFactor == null) {
         mutationFactor = 0.5;
       }
-      population = new Population(targetCode, populationSize, mutationFactor);
+      if (mateFactor == null) {
+        mateFactor = 2;
+      }
+      population = new Population(targetCode, populationSize, mutationFactor, mateFactor);
       timeout = null;
       tick = function(result) {
         if (result) {
           return clearTimeout(timeout);
         }
-        console.log("" + (population.getGenerationCount()));
         result = population.getNextGeneration();
         _this.displayPopulation(population);
         if (callback != null) {
@@ -172,14 +179,14 @@
         }
         timeout = setTimeout(function() {
           return tick(result);
-        }, 150);
+        }, 0);
         return result;
       };
       return tick(false);
     };
 
     Simulator.prototype.displayPopulation = function(population) {
-      var data, member, node;
+      var circles, data, member;
       data = (function() {
         var _i, _len, _ref, _results;
         _ref = population.getMembers();
@@ -187,14 +194,15 @@
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           member = _ref[_i];
           _results.push({
+            id: member.getCost(),
             color: member.getCode(),
-            value: 4 + Math.sqrt(member.getCost()),
-            alpha: (population.getGenerationCount() / member.getMutationCount()) - 0.7
+            value: 16,
+            alpha: 1.0
           });
         }
         return _results;
       })();
-      node = this.vis.selectAll("circle").data(this.layout.nodes({
+      circles = this.vis.selectAll("circle").data(this.layout.nodes({
         children: data
       }).filter(function(d) {
         return !d.children;
@@ -207,7 +215,7 @@
       }).attr("transform", function(d) {
         return "translate(" + d.x + "," + d.y + ")";
       });
-      node.enter().append("circle").style("fill", function(d) {
+      circles.enter().append("circle").style("fill", function(d) {
         return "#" + d.color;
       }).attr("r", function(d) {
         return d.r;
@@ -215,8 +223,8 @@
         return d.alpha;
       }).attr("transform", function(d) {
         return "translate(" + d.x + "," + d.y + ")";
-      });
-      return node.exit().remove();
+      }).transition().duration(150).attr("opacity", 0.3);
+      return circles.exit().remove();
     };
 
     return Simulator;
